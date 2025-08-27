@@ -927,23 +927,26 @@ List<CalcStep> _buildMultiplySteps(String a, String b) {
   final bar = ''.padLeft(len, '—');
 
   final steps = <CalcStep>[];
-  final partials =
-      <String>[]; // líneas parciales ya finalizadas (strings de ancho len-1)
+  final partials = <String>[]; // líneas parciales ya finalizadas (len-1)
 
   final aDigits = A.split('').map((e) => int.parse(e)).toList();
   final bDigits = B.split('').map((e) => int.parse(e)).toList();
 
-  // Helper: renderiza una línea parcial intermedia con espacios en los dígitos aún no calculados
+  // Renderiza una línea parcial intermedia con espacios en los dígitos aún no calculados
   String renderPartialProgress(List<String> core, int shift) {
     final coreStr = core.join('');
     final shifted =
-        coreStr +
-        ''.padRight(
-          shift,
-          '0',
-        ); // desplazamiento por posición del dígito del multiplicador
+        coreStr + ''.padRight(shift, '0'); // desplazamiento por dígito de B
     return shifted.padLeft(len - 1);
   }
+
+  // Paleta de colores por tag (tablero y texto)
+  const baseMarks = <StepMark>[
+    StepMark(colsRight: {}, color: Colors.amber, tag: 'a'),
+    StepMark(colsRight: {}, color: Colors.cyan, tag: 'b'),
+    StepMark(colsRight: {}, color: Colors.pinkAccent, tag: 'digit'),
+    StepMark(colsRight: {}, color: Colors.lightGreen, tag: 'carry'),
+  ];
 
   for (int jb = bDigits.length - 1; jb >= 0; jb--) {
     final d2 = bDigits[jb];
@@ -952,98 +955,111 @@ List<CalcStep> _buildMultiplySteps(String a, String b) {
 
     // Núcleo de la parcial (tamaño A.length + 1 para posible acarreo final extra)
     final core = List<String>.filled(aDigits.length + 1, ' ');
-    // Índice de escritura en el núcleo contado desde la derecha (0 = última posición del núcleo)
     int coreRightIndex = 0;
 
     for (int ia = aDigits.length - 1; ia >= 0; ia--) {
       final d1 = aDigits[ia];
-      final prod = d1 * d2 + carry;
+      final prevCarry = carry;
+      final prod = d1 * d2 + prevCarry;
       final digit = prod % 10;
       carry = prod ~/ 10;
 
-      // Posición de escritura (desde la derecha) dentro del núcleo
-      // coreRightIndex 0 corresponde al dígito menos significativo de A×d2 (antes del shift)
+      // Escribe el dígito en el núcleo (antes del shift)
       core[core.length - 1 - coreRightIndex] = digit.toString();
       coreRightIndex++;
 
-      // Calcula en qué columna global (desde la derecha) cayó este dígito ya desplazado
+      // Columna global (desde la derecha) donde cae este dígito ya desplazado
       final posRight = shift + (aDigits.length - 1 - ia);
 
-      // Construye líneas: encabezado, parciales ya finalizados, y la parcial en progreso
-      final lines = <String>[
-        top,
-        bottom,
+      // --- LÍNEAS CON TAGS POR CELDA ---
+      // Tag en A: posición del dígito actual de A
+      final aRight = (aDigits.length - 1 - ia);
+      final topT = _tagAtRight(top, aRight, 'a');
+
+      // Tag en B: posición del dígito actual de B
+      final bRight = (bDigits.length - 1 - jb);
+      final bottomT = _tagAtRight(bottom, bRight, 'b');
+
+      // Parciales ya finalizadas (sin tags)
+      final prevPartials = partials.map((p) => (' $p').padLeft(len)).toList();
+
+      // Parcial en progreso tagueada en la celda del dígito recién escrito
+      final partialProgress = renderPartialProgress(core, shift);
+      final partialLineBase = ' $partialProgress'; // longitud = len
+      final partialLineT = _tagAtRight(partialLineBase, posRight, 'digit');
+
+      final linesTagged = <String>[
+        topT,
+        bottomT,
         bar,
-        ...partials.map((p) => (' $p').padLeft(len)),
-        (' ${renderPartialProgress(core, shift)}').padLeft(len),
+        ...prevPartials,
+        partialLineT,
       ];
+
+      final explanationT =
+          '[b]$d2[/b] × [a]$d1[/a]'
+          '${prevCarry > 0 ? ' = ${d2 * d1} + [carry]$prevCarry[/carry]' : ''}'
+          ' = $prod → escribe [digit]$digit[/digit]'
+          '${carry > 0 ? ' (acarreo nuevo: [carry]$carry[/carry])' : ''}.';
 
       steps.add(
         CalcStep(
-          lines: lines,
-          explanation:
-              'Fila por $d2: $d1 × $d2 + acarreo = $prod → escribe $digit (acarreo nuevo: $carry).',
-          highlightColsRight: {posRight},
+          lines: linesTagged,
+          explanation: explanationT,
+          highlightColsRight:
+              const {}, // TODO: ya no usamos resaltado por columna
+          marks: baseMarks,
         ),
       );
     }
 
-    // Si quedó acarreo al terminar la fila, agregarlo al inicio del núcleo y mostrar un paso más
+    // Si quedó acarreo al terminar la fila, agregarlo al inicio de la parcial
     if (carry > 0) {
-      // mueve el acarreo al extremo izquierdo disponible
       final leftSlot = core.indexWhere((c) => c == ' ');
       final idx = (leftSlot == -1) ? 0 : leftSlot;
       core[idx] = carry.toString();
 
-      final lines = <String>[
-        top,
-        bottom,
+      final prevPartials = partials.map((p) => (' $p').padLeft(len)).toList();
+      final partialProgress = renderPartialProgress(core, shift);
+
+      // El dígito de acarreo añadido cae en:
+      final posRightCarry = shift + aDigits.length;
+
+      final partialCarryBase = ' $partialProgress';
+      final partialCarryT = _tagAtRight(
+        partialCarryBase,
+        posRightCarry,
+        'digit',
+      );
+
+      final linesCarry = <String>[
+        // En este paso no señalamos A (ya terminó la fila),
+        // pero mantenemos el dígito activo de B para contexto:
+        _withSign(A, ' ', len),
+        _tagAtRight(bottom, (bDigits.length - 1 - jb), 'b'),
         bar,
-        ...partials.map((p) => (' $p').padLeft(len)),
-        (' ${renderPartialProgress(core, shift)}').padLeft(len),
+        ...prevPartials,
+        partialCarryT,
       ];
 
-      // El dígito cae en la columna global siguiente a la más a la izquierda construida
-      final posRightCarry =
-          shift +
-          aDigits.length; // inmediatamente a la izquierda del último escrito
       steps.add(
         CalcStep(
-          lines: lines,
+          lines: linesCarry,
           explanation:
-              'Añade el acarreo restante $carry al inicio de la línea parcial.',
-          highlightColsRight: {posRightCarry},
+              'Añade el [carry]acarreo restante $carry[/carry] al inicio de la línea parcial.',
+          highlightColsRight: const {},
+          marks: baseMarks,
         ),
       );
     }
 
-    // Finaliza la línea parcial: rellena espacios no usados con ' ' (ya están) y congélala
+    // Congela la línea parcial
     final finalPartial = renderPartialProgress(core, shift);
     partials.add(finalPartial);
   }
 
-  // Paso final: sumar las líneas parciales (igual que antes)
-  final ai = BigInt.parse(A);
-  final bi = BigInt.parse(B);
-  var res = ai * bi;
-  if (isNeg) res = -res;
-
-  final resultLine = _withSign(res.toString(), ' ', len);
-  final linesFinal = <String>[
-    top,
-    bottom,
-    bar,
-    ...partials.map((p) => (' $p').padLeft(len)),
-    ''.padLeft(len, '—'),
-    resultLine,
-  ];
-
-  steps.add(
-    CalcStep(
-      lines: linesFinal,
-      explanation: 'Suma las líneas parciales para obtener el producto final.',
-    ),
-  );
+  // Nota: el paso de suma de parciales y el resultado final puede quedar igual que lo tengas actualmente.
+  // Si quieres que también lleve tags/colores, lo ajustamos en el siguiente micro-paso.
 
   return steps;
 }
