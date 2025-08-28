@@ -86,7 +86,7 @@ description: Calculadora educativa paso a paso con animaciones
 version: 1.0.0+1
 ```
 
-### 2) App icon (opcional si ya lo generaste)
+### 2) App icon
 
 `pubspec.yaml`
 
@@ -127,7 +127,7 @@ dart run flutter_native_splash:create
 
 ### 4) Identificadores de app
 
-- **Android**: `android/app/build.gradle` → `applicationId "com.tuempresa.calcpasos"`
+- **Android**: `android/app/build.gradle` → `applicationId "com.jovannyrch.step_by_step_calculator"`
 - **iOS**: en Xcode → _Signing & Capabilities_ → `Bundle Identifier`
 
 > Cambia también el **label** visible en Android: `android/app/src/main/res/values/strings.xml` (`app_name`).
@@ -152,20 +152,9 @@ flutter build ipa --release
 
 ---
 
-## 🏪 Preparación para tienda
-
-- **Nombre:** Calculadora Paso a Paso
-- **Descripción / palabras clave** (educación, matemáticas, calculadora, animaciones, paso a paso).
-- **Capturas:** pantallas de suma/resta/multiplicación/división con sus pasos.
-- **Icono 1024×1024** (sin transparencia en iOS).
-- **Política de privacidad:** publica el HTML en `docs/` o tu web y enlázalo en la ficha.
-  - Archivo de ejemplo: `docs/politica-privacidad.html` (incluye el nombre de la app).
-
----
-
 ## 🔐 Privacidad
 
-La app **no recopila datos personales** y funciona sin conexión. Consulta la **[Política de Privacidad](docs/politica-privacidad.html)** para más detalles.
+La app **no recopila datos personales** y funciona sin conexión. Consulta la **[Política de Privacidad](https://jovannyrch.github.io/politicas/calculadora_paso_a_paso.htmll)** para más detalles.
 
 ---
 
