@@ -154,7 +154,7 @@ flutter build ipa --release
 
 ## 🔐 Privacidad
 
-La app **no recopila datos personales** y funciona sin conexión. Consulta la **[Política de Privacidad](https://jovannyrch.github.io/politicas/calculadora_paso_a_paso.htmll)** para más detalles.
+La app **no recopila datos personales** y funciona sin conexión. Consulta la **[Política de Privacidad](https://jovannyrch.github.io/politicas/calculadora_paso_a_paso.html)** para más detalles.
 
 ---
 
